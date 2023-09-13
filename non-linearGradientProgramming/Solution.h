@@ -44,7 +44,7 @@ namespace KHAS {
 
 		void printAccuracy(double accuracy) noexcept;
 
-		void printFG(double x, size_t iter, const std::string& title) noexcept;
+		void printFG(double x, size_t iter, const std::string& title, bool is_belongs) noexcept;
 
 		void findingOptimalAccuracy(double x1, double x2, double fx, double lambda, double coef_accuracy) noexcept;
 		double getAlpha(double gfx, double last_alpha, double lambda) const noexcept;

@@ -3,12 +3,13 @@
 #include <iomanip>
 #include <sstream>
 #include <algorithm>
+#include <utility>
 #include <ConsoleInterface.h>
 
 namespace KHAS {
 	Solution::Solution(const std::string& title) noexcept
 		: window_name_{ title }
-		, app_{ window_name_ , WinWidth{ .width = 80 }, WinHeight{ .height = 100 } }
+		, app_{ window_name_ , WinWidth{.width = 80 }, WinHeight{.height = 100 } }
 	{
 		init();
 	}
@@ -49,11 +50,13 @@ namespace KHAS {
 			x1 = generateRandom();
 			x2 = generateRandom();
 		}//*/
-		double x1 { 7 };
-		double x2 { 4 };
+
+		double x1{ 7 };
+		double x2{ 4 };
 		auto fx{ funcF(x1, x2) };
 		const auto lambda{ 0.001 };
 		const auto coef_accuracy{ 0.0001 };
+
 
 		printStartData(x1, x2, fx, lambda, coef_accuracy);
 		printDerivatives();
@@ -63,24 +66,26 @@ namespace KHAS {
 
 		size_t iter{ 1 };
 
-		for (double div_accuracy{ 1 }; div_accuracy > coef_accuracy; ++iter) {
+
+		for (double div_accuracy{ coef_accuracy + 1 }; div_accuracy > coef_accuracy; ++iter) {
 
 			printNowIter(iter);
 
-			/////////////////////////////////////////////////////////////
-			/*       */
+			/*
+			//////////////////////////
+
+			*/
 			alpha1 = getAlpha(funcG1(x1, x2), alpha1, lambda);
 			alpha2 = getAlpha(funcG2(x1, x2), alpha2, lambda);
-
 			printAlpha(alpha1, alpha2);
 
-			//////////////////////////////////////////////////
-			/*          */
-			x1 += lambda * (funcF1(x1) + (-5 * alpha1) + (-6 * alpha2) );
-			x1 = x1 < 0 ? 0 : x1;
+			/////////////////////////////////////////////////////////////
+			/*       */
 
-			x2 += lambda * (funcF2(x2) + (-4 * alpha1) + (-9 * alpha2) );
-			x2 = x2 < 0 ? 0 : x2;
+			x1 += lambda * (funcF1(x1) - alpha1 * 5 - alpha2 * 4);
+			x1 = x1 > 0 ? x1 : 0;
+			x2 += lambda * (funcF2(x2) - alpha1 * 6 - alpha2 * 9);
+			x2 = x2 > 0 ? x2 : 0;
 
 			printVarX(x1, x2);
 
@@ -88,18 +93,25 @@ namespace KHAS {
 			/*                 */
 
 			auto fg1{ funcG1(x1, x2) };
-			auto fg2{ funcG2(x1, x2) };
 
-			printFG(fg1, iter, "G1");
-			printFG(fg2, iter, "G2");
+			if (fg1 >= 0) {
+				printFG(fg1, iter, "G1", true);
 
-			if (fg1 < 0 && fg2 < 0) continue;
-			
-			auto new_fx{ funcF(x1, x2) };
-			div_accuracy = std::abs(new_fx - fx);
-			fx = new_fx;
+				auto fg2{ funcG2(x1, x2) };
+				if (fg2 >= 0) {
+					printFG(fg2, iter, "G2", true);
 
-			printAccuracy(div_accuracy);
+					auto new_fx{ funcF(x1, x2) };
+					div_accuracy = std::abs(new_fx - fx);
+					fx = new_fx;
+					printAccuracy(div_accuracy);
+
+				}
+				else printFG(fg2, iter, "G2", false);
+			}
+			else printFG(fg1, iter, "G1", false);
+
+
 
 		}
 
@@ -108,7 +120,7 @@ namespace KHAS {
 		app_.addDataItem(app_.dividingLine('.'), IsFormated::Disable);
 		app_.addDataItem(app_.createString("x1: "s, std::to_string(x1), Aligment::JUSTIFIED), IsFormated::Disable);
 		app_.addDataItem(app_.createString("x2: "s, std::to_string(x2), Aligment::JUSTIFIED), IsFormated::Disable);
-		app_.addDataItem(app_.createString("Количество итераций: "s, std::to_string(iter), Aligment::JUSTIFIED), IsFormated::Disable);
+		app_.addDataItem(app_.createString("Количество итераций: "s, std::to_string(iter - 1), Aligment::JUSTIFIED), IsFormated::Disable);
 		app_.addDataItem(app_.dividingLine('='), IsFormated::Disable);
 
 
@@ -231,9 +243,9 @@ namespace KHAS {
 		app_.addDataItem(app_.dividingLine('.'), IsFormated::Disable);
 	}
 
-	double Solution::getAlpha(double gfx, double last_alpha, double lambda) const noexcept
+	double Solution::getAlpha(double gfx, double alpha, double lambda) const noexcept
 	{
-		return gfx > 0 ? 0 : last_alpha - lambda * gfx;
+		return gfx >= 0 ? 0 : alpha - lambda * gfx;
 	}
 
 	double Solution::funcF1(double x) const noexcept
@@ -246,11 +258,11 @@ namespace KHAS {
 		return 12 - 2 * x;
 	}
 
-	void Solution::printFG(double x, size_t iter, const std::string& title) noexcept
+	void Solution::printFG(double x, size_t iter, const std::string& title, bool is_belongs) noexcept
 	{
-		app_.addDataItem(title+"(x"+std::to_string(iter)+") = "+std::to_string(x)+" > 0");
+		app_.addDataItem(title + "(x" + std::to_string(iter) + ") = " + std::to_string(x) + (is_belongs ? " > 0" : " < 0"));
 		std::string str{ "Найденая точка" };
-		str += (x < 0 ? " не" : "");
+		str += (is_belongs ? "" : " не");
 		str += " принадлежит области допустимых решений";
 		app_.addDataItem(std::move(str));
 		app_.addDataItem(app_.dividingLine('.'), IsFormated::Disable);
